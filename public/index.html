@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#111c18" />
+  <title>Flashpoint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Patrick+Hand&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M24 6h16v4h-3v14l15 26a6 6 0 0 1-5 9H17a6 6 0 0 1-5-9l15-26V10h-3z' fill='%2339ff88'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" aria-hidden="true">
+      <span class="mini-tile">Fl</span><span class="brand-word">ashpoint</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="muteBtn" class="icon-btn" type="button" aria-pressed="false" aria-label="Mute sound">
+        <svg viewBox="0 0 24 24" class="ico ico-sound"><path d="M4 9h4l5-4v14l-5-4H4z" /><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" class="wave" /></svg>
+        <svg viewBox="0 0 24 24" class="ico ico-muted"><path d="M4 9h4l5-4v14l-5-4H4z" /><path d="M16 9l6 6M22 9l-6 6" /></svg>
+      </button>
+      <button id="leaveBtn" class="icon-btn hidden" type="button" aria-label="Leave room">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- HOME -->
+    <section id="screen-home" class="screen active" aria-labelledby="homeTitle">
+      <div class="logo" aria-hidden="true">
+        <div class="logo-tiles">
+          <div class="tile big" style="--c: var(--acid)"><span class="num">114</span><span class="sym">Fl</span><span class="nm">Flerovium</span></div>
+          <div class="tile big" style="--c: var(--pink)"><span class="num">33</span><span class="sym">As</span><span class="nm">Arsenic</span></div>
+          <div class="tile big" style="--c: var(--cyan)"><span class="num">1</span><span class="sym">H</span><span class="nm">Hydrogen</span></div>
+        </div>
+        <div class="logo-chalk">point!</div>
+      </div>
+      <h1 id="homeTitle" class="sr-only">Flashpoint</h1>
+      <p class="tagline">Hot-potato chemistry. Name it before your flask boils over.</p>
+
+      <form id="profileForm" class="card" autocomplete="off">
+        <div class="profile-row">
+          <button type="button" id="avatarPreview" class="tile avatar-tile" aria-label="Your element tile — tap for a random one"></button>
+          <div class="fields">
+            <label class="field">
+              <span>Nickname</span>
+              <input id="nameInput" maxlength="16" placeholder="e.g. Marie" required />
+            </label>
+            <label class="field">
+              <span>Your element <small>(symbol)</small></span>
+              <div class="sym-row">
+                <input id="symbolInput" maxlength="3" placeholder="Au" spellcheck="false" autocapitalize="off" />
+                <button type="button" id="randomSym" class="btn ghost small" aria-label="Random element">🎲</button>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="split">
+          <button type="button" id="createBtn" class="btn primary">Create room</button>
+          <div class="join-group">
+            <input id="codeInput" maxlength="4" placeholder="CODE" aria-label="Room code" autocapitalize="characters" spellcheck="false" />
+            <button type="button" id="joinBtn" class="btn">Join</button>
+          </div>
+        </div>
+      </form>
+      <button id="rejoinBtn" type="button" class="btn ghost huge hidden" style="margin-top:12px"></button>
+      <p class="fine">2–8 players · one phone each · share the 4-letter code</p>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="screen-lobby" class="screen" aria-labelledby="lobbyTitle">
+      <div class="room-code-wrap">
+        <span class="label">Room code</span>
+        <button id="roomCode" class="room-code" type="button" aria-label="Copy invite link">----</button>
+        <span class="hint" id="copyHint">Tap to copy invite link</span>
+      </div>
+      <h2 id="lobbyTitle" class="chalk-h">Lab partners <span id="playerCount" class="count"></span></h2>
+      <div id="lobbyPlayers" class="tile-grid"></div>
+
+      <div id="hostSettings" class="card settings">
+        <div class="setting">
+          <span class="label">Lives</span>
+          <div class="stepper">
+            <button type="button" class="btn ghost small" data-lives="-1" aria-label="Fewer lives">−</button>
+            <output id="livesOut">3</output>
+            <button type="button" class="btn ghost small" data-lives="1" aria-label="More lives">+</button>
+          </div>
+        </div>
+        <div class="setting">
+          <span class="label">Difficulty</span>
+          <div id="levelPicker" class="seg" role="radiogroup" aria-label="Difficulty"></div>
+        </div>
+      </div>
+      <p id="guestSettings" class="settings-readout"></p>
+
+      <div class="lobby-actions">
+        <button id="startBtn" class="btn primary huge" type="button">Start reaction</button>
+        <p id="waitMsg" class="wait">Waiting for the host to start…</p>
+      </div>
+      <details class="how card">
+        <summary>How to play</summary>
+        <ol>
+          <li>Each round shows a chemistry category, like “Name a halogen or a noble gas”.</li>
+          <li>Whoever holds the flask types an answer. A correct, unused answer passes the flask to the next player.</li>
+          <li>The fuse starts at 15 seconds and gets 1 second shorter with each pass, down to 6.</li>
+          <li>Wrong or repeated answers just shake the flask, so keep trying!</li>
+          <li>If the timer runs out, your flask boils over and you lose a life. The last chemist standing wins.</li>
+        </ol>
+        <p class="fine">Names, symbols and formulas all count. Case and spacing don’t matter, and one typo is forgiven on longer words.</p>
+      </details>
+    </section>
+
+    <!-- GAME -->
+    <section id="screen-game" class="screen" aria-labelledby="promptText">
+      <div class="prompt-board">
+        <div class="prompt-meta"><span id="roundNo">Round 1</span><span id="promptSource"></span></div>
+        <p id="promptText" class="prompt" aria-live="polite"></p>
+      </div>
+
+      <div id="ring" class="ring"></div>
+
+      <div class="stage">
+        <div id="flaskWrap" class="flask-wrap">
+          <svg id="flask" class="flask" viewBox="0 0 200 240" aria-hidden="true">
+            <defs>
+              <clipPath id="flaskClip"><path d="M80 18h40v62l52 110a20 20 0 0 1-18 30H46a20 20 0 0 1-18-30l52-110z" /></clipPath>
+              <radialGradient id="glow" cx="50%" cy="70%" r="60%">
+                <stop offset="0%" stop-color="var(--liquid)" stop-opacity="0.55" />
+                <stop offset="100%" stop-color="var(--liquid)" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <ellipse cx="100" cy="190" rx="95" ry="50" fill="url(#glow)" class="halo" />
+            <g clip-path="url(#flaskClip)">
+              <rect x="0" y="0" width="200" height="240" fill="rgba(255,255,255,0.04)" />
+              <g class="liquid-g">
+                <path class="liquid" d="M0 120 Q 25 112 50 120 T 100 120 T 150 120 T 200 120 T 250 120 V 240 H 0 Z" />
+              </g>
+              <g id="bubbles"></g>
+            </g>
+            <path class="glass" d="M80 18h40v62l52 110a20 20 0 0 1-18 30H46a20 20 0 0 1-18-30l52-110z" />
+            <path class="rim" d="M72 12h56" />
+            <path class="shine" d="M88 90 L 56 160" />
+            <g class="marks"><path d="M118 130h14M122 150h14M127 170h14" /></g>
+          </svg>
+          <div id="foam" class="foam" aria-hidden="true"></div>
+          <div id="fizzText" class="fizz-text" aria-hidden="true">FIZZ!</div>
+        </div>
+        <div class="timer"><div id="timerBar" class="timer-bar"></div><span id="timerNum" class="timer-num">15</span></div>
+        <p id="turnText" class="turn-text" aria-live="assertive"></p>
+      </div>
+
+      <form id="answerForm" class="answer-form" autocomplete="off">
+        <input id="answerInput" maxlength="60" placeholder="Type an answer…" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Your answer" />
+        <button class="btn primary" type="submit">Pass!</button>
+      </form>
+      <p id="attempt" class="attempt" aria-live="polite"></p>
+
+      <div class="used-wrap">
+        <div class="used-head"><span>Used this round</span><span id="usedCount"></span></div>
+        <ul id="usedList" class="used-list"></ul>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="screen-results" class="screen" aria-labelledby="resultTitle">
+      <h2 id="resultTitle" class="chalk-h big">Reaction complete!</h2>
+      <div id="winnerBox" class="winner"></div>
+      <ol id="standings" class="standings"></ol>
+      <div class="lobby-actions">
+        <button id="rematchBtn" class="btn primary huge" type="button">Rematch</button>
+        <button id="toLobbyBtn" class="btn ghost" type="button">Change settings</button>
+        <p id="rematchWait" class="wait">Waiting for the host to start a rematch…</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="sound.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
