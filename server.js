@@ -15,6 +15,7 @@ const envMs = (k) => (process.env[k] ? Number(process.env[k]) : undefined);
 const config = Object.fromEntries(Object.entries({
   startMs: envMs('FLASK_START_MS'), stepMs: envMs('FLASK_STEP_MS'), minMs: envMs('FLASK_MIN_MS'),
   intermissionMs: envMs('INTERMISSION_MS'), rejoinMs: envMs('REJOIN_MS'),
+  turnsAfterBoom: envMs('TOPIC_TURNS_AFTER_BOOM'), topicLaps: envMs('TOPIC_LAPS'),
 }).filter(([, v]) => v !== undefined));
 
 const app = express();

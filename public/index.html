@@ -107,7 +107,8 @@
           <li>Whoever holds the flask types an answer. A correct, unused answer passes the flask to the next player.</li>
           <li>The fuse starts at 15 seconds and gets 1 second shorter with each pass, down to 6.</li>
           <li>Wrong or repeated answers just shake the flask, so keep trying!</li>
-          <li>If the timer runs out, your flask boils over and you lose a life. The last chemist standing wins.</li>
+          <li>If the timer runs out, your flask boils over and you lose a life. The topic sticks around for a couple more passes, but never comes back to whoever just boiled over.</li>
+          <li>Topics also change after two laps with no boil-overs. The last chemist standing wins.</li>
         </ol>
         <p class="fine">Names, symbols and formulas all count. Case and spacing don’t matter, and one typo is forgiven on longer words.</p>
       </details>
@@ -116,7 +117,7 @@
     <!-- GAME -->
     <section id="screen-game" class="screen" aria-labelledby="promptText">
       <div class="prompt-board">
-        <div class="prompt-meta"><span id="roundNo">Round 1</span><span id="promptSource"></span></div>
+        <div class="prompt-meta"><span id="roundNo">Topic 1</span><span id="promptSource"></span></div>
         <p id="promptText" class="prompt" aria-live="polite"></p>
       </div>
 
@@ -159,7 +160,7 @@
       <p id="attempt" class="attempt" aria-live="polite"></p>
 
       <div class="used-wrap">
-        <div class="used-head"><span>Used this round</span><span id="usedCount"></span></div>
+        <div class="used-head"><span>Used this topic</span><span id="usedCount"></span></div>
         <ul id="usedList" class="used-list"></ul>
       </div>
     </section>

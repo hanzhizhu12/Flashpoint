@@ -126,10 +126,12 @@ test('joining, turns, overflow, rejoining and winning', async () => {
     const boom = await A.waitEvent('boom', () => true, 3000);
     assert.equal(boom.playerId, victimId);
     assert.equal(A.state.players.find((p) => p.id === victimId).lives, 1);
-    await A.waitFor((c) => c.state.round.no === roundNo + 1 && c.state.round.status === 'live', 2000, 'new round');
+    await A.waitFor((c) => c.state.round.status === 'live', 2000, 'play resumes');
     const order = A.state.players.map((p) => p.id);
-    assert.equal(A.state.round.activeId, order[(order.indexOf(victimId) + 1) % 3], 'next player starts the new category');
-    assert.equal(A.state.round.durationMs, 1500, 'fuse resets for a new category');
+    assert.equal(A.state.round.activeId, order[(order.indexOf(victimId) + 1) % 3], 'next player gets the flask');
+    assert.equal(A.state.round.no, roundNo, 'same topic continues after a boil-over');
+    assert.equal(A.state.round.durationMs, 1500, 'fuse resets after a boil-over');
+    assert.equal(A.state.round.changesIn, 2, 'topic changes a couple of passes later');
 
     // ----- rejoining -----
     const seat = { code, token: C.token };

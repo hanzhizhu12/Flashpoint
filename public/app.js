@@ -225,7 +225,9 @@
       $('#attempt').innerHTML = '';
     }
     $('#promptText').textContent = r.prompt;
-    $('#roundNo').textContent = `Round ${r.no}`;
+    $('#roundNo').textContent = r.changesIn == null ? `Topic ${r.no}`
+      : r.changesIn <= 1 ? `Topic ${r.no} · last pass` : `Topic ${r.no} · ${r.changesIn} passes left`;
+    $('#roundNo').classList.toggle('warn', r.diedOn.length > 0);
     $('#promptSource').textContent = r.source ? `Textbook: ${r.source}` : '';
 
     // seats
@@ -251,6 +253,7 @@
     const turn = $('#turnText');
     turn.classList.toggle('mine', mine);
     if (r.status === 'boom') turn.textContent = `${holder ? holder.name : 'Someone'}’s flask boiled over!`;
+    else if (mine && r.diedOn.length && r.used.length && r.durationMs === START_MS) turn.textContent = 'Same topic, fresh flask. Your turn!';
     else if (r.status === 'over') turn.textContent = 'Reaction complete!';
     else turn.textContent = mine ? 'Your flask! Name one!' : `${holder ? holder.name : '…'} is holding the flask`;
 
@@ -305,6 +308,7 @@
     if (playerId === me) navigator.vibrate?.([80, 40, 160]);
   });
   socket.on('round', () => Sound.round());
+  socket.on('resume', () => Sound.round());
   socket.on('gameover', () => setTimeout(() => Sound.win(), 600));
 
   function spawnFoam() {

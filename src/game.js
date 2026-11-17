@@ -5,7 +5,9 @@ const DEFAULTS = {
   startMs: 15000, // flask fuse at the start of a round
   stepMs: 1000, // shrink per successful pass
   minMs: 6000,
-  intermissionMs: 3500, // pause after a boil-over before the next category
+  intermissionMs: 3500, // pause after a boil-over before play resumes
+  turnsAfterBoom: 2, // after a life is lost, the topic survives this many more passes
+  topicLaps: 2, // with no boil-overs, the topic changes after this many laps of passes
   rejoinMs: 30000, // grace period for disconnected players
   maxPlayers: 8,
 };
@@ -229,7 +231,9 @@ class Room {
     return null;
   }
 
-  startRound(activeId) {
+  // New topic. The fuse resets only when asked (game start, after a boil-over);
+  // a topic change mid-streak keeps the shrinking fuse so the pressure keeps building.
+  startRound(activeId, fuseMs = this.cfg.startMs) {
     const active = this.byId(activeId);
     if (!active || active.lives <= 0) activeId = this.nextAlive(activeId);
     const cat = this.drawCategory();
@@ -245,9 +249,11 @@ class Room {
       deadline: 0,
       status: 'live', // live | boom
       passes: 0,
+      diedOn: [], // players who lost a life on this topic: it never comes back to them
+      turnsLeft: null, // passes left before the topic changes, once someone has lost a life on it
     };
-    this.log(`New category: ${cat.prompt}`);
-    this.armTimer(this.cfg.startMs);
+    this.log(`New topic: ${cat.prompt}`);
+    this.armTimer(fuseMs);
     this.emit('round', { prompt: cat.prompt, activeId });
     this.broadcast();
   }
@@ -280,15 +286,41 @@ class Room {
     this.log(`${player.name}: ${m.display}`);
     const nextId = this.nextAlive(id);
     this.emit('accepted', { playerId: id, nextId, text: raw, display: m.display, typo: m.typo });
+    const fuse = Math.max(this.cfg.minMs, r.durationMs - this.cfg.stepMs);
+    if (r.turnsLeft !== null) r.turnsLeft--;
     if (r.used.length >= r.total) {
-      // Every answer used up: fresh category, no penalty.
-      this.log('Category cleared! Fresh flask.');
-      this.startRound(nextId);
+      this.log('Every answer used! New topic.');
+      this.startRound(nextId, fuse);
+      return;
+    }
+    if (this.passesUntilChange(nextId) === 0) {
+      this.startRound(nextId, fuse);
       return;
     }
     r.activeId = nextId;
-    this.armTimer(Math.max(this.cfg.minMs, r.durationMs - this.cfg.stepMs));
+    this.armTimer(fuse);
     this.broadcast();
+  }
+
+  /**
+   * How many more successful passes the current topic survives if `holderId` holds the flask.
+   * 0 means it must change before they get it. Triggers: a couple of turns after a
+   * boil-over, before it would reach someone who lost a life on it, or after
+   * `topicLaps` full laps with no boil-over.
+   */
+  passesUntilChange(holderId) {
+    const r = this.round;
+    const limits = [];
+    if (r.turnsLeft !== null) limits.push(r.turnsLeft);
+    else limits.push(this.cfg.topicLaps * this.aliveCount() - r.passes);
+    if (r.diedOn.length) {
+      let id = holderId;
+      for (let k = 0; k <= this.players.length; k++) {
+        if (r.diedOn.includes(id)) { limits.push(k); break; }
+        id = this.nextAlive(id);
+      }
+    }
+    return Math.max(0, Math.min(...limits));
   }
 
   boom() {
@@ -300,10 +332,20 @@ class Room {
     this.log(loser.lives ? `${loser.name}’s flask boiled over! (${loser.lives} left)` : `${loser.name}’s flask boiled over — eliminated!`);
     this.emit('boom', { playerId: loser.id, livesLeft: loser.lives });
     this.broadcast();
+    if (!r.diedOn.includes(loser.id)) r.diedOn.push(loser.id);
+    r.turnsLeft = this.cfg.turnsAfterBoom;
     this.timer = setTimeout(() => {
       if (this.phase !== 'playing') return;
       if (this.aliveCount() <= 1) return this.finish();
-      this.startRound(this.nextAlive(loser.id));
+      const nextId = this.nextAlive(loser.id);
+      if (this.passesUntilChange(nextId) === 0) return this.startRound(nextId);
+      // Same topic carries on with the next player and a fresh fuse.
+      r.status = 'live';
+      r.activeId = nextId;
+      this.log(`Same topic, ${this.byId(nextId).name}’s turn`);
+      this.armTimer(this.cfg.startMs);
+      this.emit('resume', { activeId: nextId });
+      this.broadcast();
     }, this.cfg.intermissionMs);
   }
 
@@ -341,6 +383,7 @@ class Room {
       round: r && {
         no: r.no, prompt: r.prompt, source: r.source, total: r.total, used: r.used.map(({ display, by, typo }) => ({ display, by, typo })),
         activeId: r.activeId, durationMs: r.durationMs, remainingMs: Math.max(0, r.deadline - Date.now()), status: r.status,
+        changesIn: r.status === 'live' ? this.passesUntilChange(r.activeId) : null, diedOn: r.diedOn,
       },
       feed: this.feed.slice(-8),
     };
